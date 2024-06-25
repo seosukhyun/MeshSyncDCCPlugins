@@ -37,26 +37,29 @@
 #       - include directory for component Xxx
 #
 # Author: Andreas Stahl andreas.stahl@tu-dresden.de
+set(Poco_HINTS "C:/Users/User/Desktop/Development/poco-poco-1.10.1-release")
 
-set(Poco_HINTS
-    /usr/local
-    ${Poco_DIR} 
-    $ENV{Poco_DIR}
-)
+message(STATUS "Poco_HINTS: ${Poco_HINTS}")
 
 if(NOT Poco_ROOT_DIR)
     # look for the root directory, first for the source-tree variant
     find_path(Poco_ROOT_DIR 
         NAMES Foundation/include/Poco/Poco.h
-        HINTS ${Poco_HINTS}
+        PATHS ${Poco_HINTS}
+        NO_DEFAULT_PATH
     )
+    message(STATUS "Trying source-tree variant: Poco_ROOT_DIR=${Poco_ROOT_DIR}")
+
     if(NOT Poco_ROOT_DIR)
         # this means poco may have a different directory structure, maybe it was installed, let's check for that
         message(STATUS "Looking for Poco install directory structure.")
         find_path(Poco_ROOT_DIR 
             NAMES include/Poco/Poco.h
-            HINTS ${Poco_HINTS}
+            PATHS ${Poco_HINTS}
+            NO_DEFAULT_PATH
         )
+        message(STATUS "Trying install directory variant: Poco_ROOT_DIR=${Poco_ROOT_DIR}")
+
         if(NOT Poco_ROOT_DIR) 
             # poco was still not found -> Fail
             if(Poco_FIND_REQUIRED)
@@ -75,6 +78,7 @@ if(NOT Poco_ROOT_DIR)
 endif()
 mark_as_advanced(Poco_ROOT_DIR)
 
+message(STATUS "Poco_ROOT_DIR: ${Poco_ROOT_DIR}")
 
 # if installed directory structure, set full include dir
 if(Poco_INSTALLED)
@@ -90,21 +94,20 @@ list(APPEND components
 )
 list(REMOVE_DUPLICATES components) # remove duplicate defaults
 
-foreach( component ${components} )
-    #if(NOT Poco_${component}_FOUND)
-        
+foreach(component ${components})
     # include directory for the component
     if(NOT Poco_${component}_INCLUDE_DIR)
         find_path(Poco_${component}_INCLUDE_DIR
             NAMES 
                 Poco/${component}.h     # e.g. Foundation.h
                 Poco/${component}/${component}.h # e.g. OSP/OSP.h Util/Util.h
-            HINTS
+            PATHS
                 ${Poco_ROOT_DIR}
             PATH_SUFFIXES
                 include
                 ${component}/include
         )
+        message(STATUS "Poco ${component} include dir: ${Poco_${component}_INCLUDE_DIR}")
     endif()
     if(NOT Poco_${component}_INCLUDE_DIR)
         message(FATAL_ERROR "Poco_${component}_INCLUDE_DIR NOT FOUND")
@@ -119,7 +122,7 @@ foreach( component ${components} )
             NAMES             
                 Poco${component}md.lib # Multithreaded-DLL, Windows
                 libPoco${component}.a  # Others
-            HINTS 
+            PATHS 
                 ${Poco_ROOT_DIR}
                 ${Poco_ROOT_DIR}/cmake-build
             PATH_SUFFIXES
@@ -129,23 +132,21 @@ foreach( component ${components} )
                 lib
                 bin
         )
-        if(Poco_${component}_LIBRARY)
-            message(STATUS "Found Poco ${component}: ${Poco_${component}_LIBRARY}")
-        endif()
+        message(STATUS "Found Poco ${component} library: ${Poco_${component}_LIBRARY}")
     endif()
     
     if(Poco_${component}_LIBRARY)
         list(APPEND Poco_LIBRARIES "optimized" ${Poco_${component}_LIBRARY} )    
     endif()
     
-	# debug library
-	if(NOT Poco_${component}_LIBRARY_DEBUG)
+    # debug library
+    if(NOT Poco_${component}_LIBRARY_DEBUG)
         find_library(
             Poco_${component}_LIBRARY_DEBUG
             NAMES             
                 Poco${component}mdd.lib # Multithreaded-DLL, Windows
                 libPoco${component}d.a  # Others
-            HINTS 
+            PATHS 
                 ${Poco_ROOT_DIR}
                 ${Poco_ROOT_DIR}/cmake-build
             PATH_SUFFIXES
@@ -153,13 +154,12 @@ foreach( component ${components} )
                 lib
                 bin
         )
-        if(Poco_${component}_LIBRARY_DEBUG)
-            message(STATUS "Found Poco ${component} Debug: ${Poco_${component}_LIBRARY}")
-        endif()
-	endif(NOT Poco_${component}_LIBRARY_DEBUG)
-	if(Poco_${component}_LIBRARY_DEBUG)
-		list(APPEND Poco_LIBRARIES "debug" ${Poco_${component}_LIBRARY_DEBUG})
-	endif()    
+        message(STATUS "Found Poco ${component} debug library: ${Poco_${component}_LIBRARY_DEBUG}")
+    endif()
+    
+    if(Poco_${component}_LIBRARY_DEBUG)
+        list(APPEND Poco_LIBRARIES "debug" ${Poco_${component}_LIBRARY_DEBUG})
+    endif()    
     
     # mark component as found or handle not finding it
     if(Poco_${component}_LIBRARY)
